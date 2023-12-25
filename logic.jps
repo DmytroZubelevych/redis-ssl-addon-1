@@ -74,11 +74,21 @@ onAfterMigrate:
   - reGenerateCerts
 
 buttons:
-  - confirmText: Do you want to reissue the SSL certificates and key (service restart needed)?
-    loadingText: Reissuing the certificates...
+  - confirmText: Do you want to reissue the SSL certificates (root, server and client) and keys (root, server and client)? Service restart will be done.
+    loadingText: Reissuing all certificates and keys...
     action: reGenerateCerts
-    caption: Re-issue certificates
-    successText: Certificates reissued successfully
+    caption: Renew all certs
+    successText: All the certificates and keys are reissued successfully
+  - confirmText: Do you want to reissue the SSL certificates and key (only server, root and client are not renewed)? Service restart will be done.
+    loadingText: Reissuing the certificates...
+    action: reGenerateServerCerts
+    caption: Renew server certs
+    successText: Server certificates and keys are reissued successfully
+  - confirmText: Do you want to reissue the SSL certificates and key (only client, root and server are not renewed)? Service restart will be done. (Client certificate term of validity is 1 year)
+    loadingText: Reissuing the certificates...
+    action: reGenerateClientCerts
+    caption: Renew client certs
+    successText: Client certificates and keys are reissued successfully
 
 actions:
   installCertsOnEnv:
@@ -129,6 +139,26 @@ actions:
         rm -rf ${globals.certFolder}/*;
       user: root
     - installCertsOnEnv
+
+  reGenerateServerCerts:
+    - forEach(nodes.${targetNodes.nodeGroup}):
+      - cmd[${@i.id}]: jem service stop 
+    - cmd[${targetNodes.nodeGroup}]: |-
+        cp -f ${globals.certFolder}/server/* ${globals.certFolder}/;
+        selfcertgen
+      user: root
+    - moveCertsToDirs:
+        affectedNodes: ${targetNodes.nodeGroup}
+
+  reGenerateClientCerts:
+    - forEach(nodes.${targetNodes.nodeGroup}):
+      - cmd[${@i.id}]: jem service stop 
+    - cmd[${targetNodes.nodeGroup}]: |-
+        cp ${globals.certFolder}/server/* ${globals.certFolder}/;
+        selfcertgen
+      user: root
+    - moveCertsToDirs:
+        affectedNodes: ${targetNodes.nodeGroup}
             
   getMasterId:
     - forEach(nodes.${targetNodes.nodeGroup}):
