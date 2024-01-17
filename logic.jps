@@ -159,6 +159,24 @@ actions:
       user: root
     - moveCertsToDirs:
         affectedNodes: ${targetNodes.nodeGroup}
+
+  moveCertsToDirs:
+    - cmd[${this.affectedNodes}]: |-
+        rm -rf ${globals.certFolder}/client; mkdir -p ${globals.certFolder}/client;
+        rm -rf ${globals.certFolder}/server; mkdir -p ${globals.certFolder}/server;
+        chown -R 700:700 ${globals.certFolder}/*
+        rm -f ${globals.certFolder}/client.csr ${globals.certFolder}/server.csr ${globals.certFolder}/client-req.pem ${globals.certFolder}/server-req.pem
+        rm -f ${globals.certFolder}/{server.srl,client.csr}
+        for i in root.crt root.key server.crt server.key root.srl
+        do
+            [ -f ${globals.certFolder}/${i} ] && mv -f ${globals.certFolder}/${i} ${globals.certFolder}/server/${i}
+        done
+        for i in client.crt client.key
+        do
+            [ -f ${globals.certFolder}/${i} ] && mv -f ${globals.certFolder}/${i} ${globals.certFolder}/client/${i}
+        done
+        ln -sfT ${globals.certFolder}/server/root.crt ${globals.certFolder}/client/root.crt
+      user: root
             
   getMasterId:
     - forEach(nodes.${targetNodes.nodeGroup}):
